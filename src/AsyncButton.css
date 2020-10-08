@@ -1,0 +1,14 @@
+button {
+    background-color: white;
+    color: black;
+}
+
+button.done {
+    background-color: green;
+    color: white;
+}
+
+button.error {
+    background-color: firebrick;
+    color: white;
+}
