@@ -9,29 +9,23 @@ import userEvent from '@testing-library/user-event'
 
 import AsyncExampleWithTimeout from './AsyncExampleWithTimeout'
 
-// based on this discussion:
-// https://stackoverflow.com/questions/51126786/jest-fake-timers-with-promises
+
 async function waitForFakeTime(ms) {
-    // Needs to be wrapped in a promise to allow microtask queue to flush prior
-    // to executing. This "fakes" a task yield (closer to real timeout).
-    Promise.resolve().then(() => {
-        act(() => {
-            jest.runAllImmediates();
-            jest.advanceTimersByTime(ms);
-            jest.runAllTicks();
-        })        
-    });
-    
-    // Wait here until jest advances the timers by our desired amount
-    // Doing the await will allow any queued microtasks to run before we resolve
-    // the setTimeout
-    await new Promise(resolve => setTimeout(resolve, ms));
+    await act(async () => {
+        jest.runAllImmediates();
+        jest.advanceTimersByTime(ms);
+        jest.runAllTicks();
+
+        await flushAllPromises()
+    })
 }
 
 async function flushAllPromises() {
-    for (let promises = 0; promises <= 10; promises++) {
-        await new Promise(resolve => setImmediate(resolve))
-    }
+    await act(async () => {
+        for (let promises = 0; promises <= 10; promises++) {
+            await new Promise(resolve => setImmediate(resolve))
+        }
+    })
 }
 
 /**
