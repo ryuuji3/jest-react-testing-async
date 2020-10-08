@@ -3,12 +3,11 @@ import React from 'react'
 import {
     render,
     act,
+    waitFor,
 } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import AsyncExampleWithTimeout from './AsyncExampleWithTimeout'
-
-jest.useFakeTimers()
 
 // based on this discussion:
 // https://stackoverflow.com/questions/51126786/jest-fake-timers-with-promises
@@ -61,32 +60,70 @@ function clickButtonSync(button) {
 }
 
 
-test('Renders loading message when clicked (sync click button)', async () => {
-    const { getByRole } = render(<AsyncExampleWithTimeout timeout={2000} />)
-    const button = getByRole('button', {
-        label: /click me/i,
+describe('When time is faked', () => {
+    beforeAll(() => {
+        jest.useFakeTimers()
     })
 
-    clickButtonSync(button)
+    test('Renders loading message when clicked (sync click button)', async () => {
+        const { getByRole } = render(<AsyncExampleWithTimeout timeout={2000} />)
+        const button = getByRole('button', {
+            label: /click me/i,
+        })
+    
+        clickButtonSync(button)
+    
+        expect(button).toHaveTextContent(/loading/i)
+    
+        await waitForFakeTime(2000)
+    
+        expect(button).toHaveTextContent(/done/i)
+    })
+    
+    test('Renders loading message when clicked (async click button)', async () => {
+        const { getByRole } = render(<AsyncExampleWithTimeout timeout={2000} />)
+        const button = getByRole('button', {
+            label: /click me/i,
+        })
+    
+        await clickButtonAsync(button)
+    
+        expect(button).toHaveTextContent(/loading/i)
+    
+        await waitForFakeTime(2000)
+    
+        expect(button).toHaveTextContent(/done/i)
+    })
 
-    expect(button).toHaveTextContent(/loading/i)
-
-    await waitForFakeTime(2000)
-
-    expect(button).toHaveTextContent(/done/i)
+    afterAll(() => {
+        jest.useRealTimers()
+    })
 })
 
-test('Renders loading message when clicked (async click button)', async () => {
-    const { getByRole } = render(<AsyncExampleWithTimeout timeout={2000} />)
-    const button = getByRole('button', {
-        label: /click me/i,
+describe('When time is not faked', () => {
+    test('Renders loading message when clicked (sync click button)', async () => {
+        const { getByRole } = render(<AsyncExampleWithTimeout timeout={500} />)
+        const button = getByRole('button', {
+            label: /click me/i,
+        })
+    
+        clickButtonSync(button)
+    
+        expect(button).toHaveTextContent(/loading/i)
+
+        await waitFor(() => expect(button).toHaveTextContent(/done/i))
     })
+    
+    test('Renders loading message when clicked (async click button)', async () => {
+        const { getByRole } = render(<AsyncExampleWithTimeout timeout={500} />)
+        const button = getByRole('button', {
+            label: /click me/i,
+        })
+    
+        await clickButtonAsync(button)
+    
+        expect(button).toHaveTextContent(/loading/i)
 
-    await clickButtonAsync(button)
-
-    expect(button).toHaveTextContent(/loading/i)
-
-    await waitForFakeTime(2000)
-
-    expect(button).toHaveTextContent(/done/i)
+        await waitFor(() => expect(button).toHaveTextContent(/done/i))
+    })
 })
